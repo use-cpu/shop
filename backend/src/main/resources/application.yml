@@ -1,0 +1,70 @@
+# ====================================================================
+# SpringBoot 电商后端配置文件
+# 本地运行前请先创建数据库 shop_mall 并执行 sql/schema.sql
+# ====================================================================
+server:
+  port: 8080
+  servlet:
+    context-path: /api        # 统一接口前缀，前端请求 /api/xxx
+
+spring:
+  application:
+    name: shop-mall
+  # ---------- 数据源配置 ----------
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地开发地址；Docker/Sealos 部署时通过环境变量 DB_HOST 覆盖
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:shop_mall}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      idle-timeout: 30000      # 空闲连接超时回收，避免连接失效告警
+      max-lifetime: 1200000
+      connection-timeout: 30000
+  # ---------- Redis 配置 ----------
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  # ---------- Jackson 序列化 ----------
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+# ---------- MyBatis-Plus 配置 ----------
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true   # 下划线转驼峰
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: AUTO                      # 主键自增
+      logic-delete-field: null
+  mapper-locations: classpath:/mapper/*.xml
+
+# ---------- 自定义业务配置 ----------
+shop:
+  jwt:
+    secret: ${JWT_SECRET:ZmQ0ZGI5ZjJjYzQwN2Q0YzQwYzRkYzQwYzQwYzQwYzQw} # JWT 签名密钥
+    expiration: 86400000                 # 令牌有效期 24 小时(毫秒)
+    header: Authorization                 # 请求头名称
+  cart:
+    temp-prefix: "cart:temp:"            # 离线购物车 key 前缀
+    user-prefix: "cart:"                 # 用户购物车 key 前缀
+  stock:
+    prefix: "stock:"                     # Redis 库存缓存 key 前缀
+  order:
+    pay-timeout: 30                      # 未支付自动关单时间(分钟)
+
+logging:
+  level:
+    com.shop.mall: debug

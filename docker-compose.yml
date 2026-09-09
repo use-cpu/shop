@@ -1,0 +1,62 @@
+# ====================================================================
+# 本地一键编排: MySQL + Redis + 后端 + 前端
+# 使用: docker compose up -d
+# 首次启动请先执行 backend/src/main/resources/sql/schema.sql 初始化数据库
+# ====================================================================
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: shop-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shop_mall
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/src/main/resources/sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+
+  redis:
+    image: redis:7-alpine
+    container_name: shop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    container_name: shop-backend
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: shop_mall
+      DB_USER: root
+      DB_PASSWORD: root
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ZmQ0ZGI5ZjJjYzQwN2Q0YzQwYzRkYzQwYzQwYzQwYzQw
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: shop-frontend
+    depends_on:
+      - backend
+    environment:
+      BACKEND_HOST: backend:8080
+    ports:
+      - "80:80"
+
+volumes:
+  mysql_data:
+  redis_data:

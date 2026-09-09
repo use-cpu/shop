@@ -1,0 +1,99 @@
+# ====================================================================
+# GitHub Actions: 自动构建前后端镜像并推送至 GHCR (GitHub Container Registry)
+# 触发条件: 推送 main 分支
+# 产出镜像:
+#   ghcr.io/<owner>/shop-backend:<sha> 和 :latest
+#   ghcr.io/<owner>/shop-frontend:<sha> 和 :latest
+# ====================================================================
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 允许写入 package 以推送 GHCR
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/shop-backend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/shop-backend:${{ github.sha }}
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/shop-frontend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/shop-frontend:${{ github.sha }}
+
+  make-public:
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set lowercase owner
+        run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Set packages public (anonymous pull)
+        run: |
+          for pkg in shop-backend shop-frontend; do
+            # 查询 package id
+            ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/orgs/${{ env.OWNER_LC }}/packages?package_type=container" \
+              | python3 -c "import sys,json; pkgs=json.load(sys.stdin); print(next((p['id'] for p in pkgs if p['name']=='$pkg'),''))" 2>/dev/null)
+            if [ -z "$ID" ]; then
+              ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/users/${{ env.OWNER_LC }}/packages?package_type=container" \
+                | python3 -c "import sys,json; pkgs=json.load(sys.stdin); print(next((p['id'] for p in pkgs if p['name']=='$pkg'),''))" 2>/dev/null)
+            fi
+            if [ -n "$ID" ]; then
+              curl -X PATCH -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/user/packages/$ID" \
+                -d '{"visibility":"public"}' || true
+              echo "Set $pkg to public"
+            fi
+          done
