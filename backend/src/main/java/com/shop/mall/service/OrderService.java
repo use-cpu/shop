@@ -28,6 +28,9 @@ public interface OrderService {
     /** 确认收货 */
     void confirm(String orderNo);
 
+    /** 删除订单记录(仅已完成/已关闭) */
+    void delete(String orderNo);
+
     /** 订单详情 */
     OrderVO detail(String orderNo);
 

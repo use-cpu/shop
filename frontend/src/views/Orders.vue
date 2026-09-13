@@ -39,6 +39,7 @@
               <el-button v-if="o.status === 0" type="primary" size="small" @click="pay(o.orderNo)">去支付</el-button>
               <el-button v-if="o.status === 0" size="small" @click="cancel(o.orderNo)">取消</el-button>
               <el-button v-if="o.status === 2" type="success" size="small" @click="confirm(o.orderNo)">确认收货</el-button>
+              <el-button v-if="o.status === 3 || o.status === 4" type="danger" plain size="small" @click="remove(o.orderNo)">删除</el-button>
             </div>
           </div>
         </el-card>
@@ -100,6 +101,13 @@ async function cancel(orderNo) {
 async function confirm(orderNo) {
   await orderApi.confirm(orderNo)
   ElMessage.success('已确认收货')
+  loadData()
+}
+
+async function remove(orderNo) {
+  await ElMessageBox.confirm('删除后订单记录将不可恢复, 确定删除吗?', '提示', { type: 'warning' })
+  await orderApi.delete(orderNo)
+  ElMessage.success('已删除')
   loadData()
 }
 

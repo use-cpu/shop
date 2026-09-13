@@ -65,10 +65,18 @@ public class CartServiceImpl implements CartService {
         int selectedCount = 0;
         BigDecimal selectedAmount = BigDecimal.ZERO;
 
+        // 批量查询购物车商品, 避免循环内逐条 selectById 造成 N+1
+        List<Long> productIds = entries.keySet().stream()
+                .map(k -> Long.valueOf(k.toString())).collect(Collectors.toList());
+        Map<Long, Product> productMap = productIds.isEmpty()
+                ? Map.of()
+                : productMapper.selectBatchIds(productIds).stream()
+                        .collect(Collectors.toMap(Product::getId, p -> p));
+
         for (Map.Entry<Object, Object> e : entries.entrySet()) {
             Long productId = Long.valueOf(e.getKey().toString());
             CartItem item = parseItem(e.getValue());
-            Product p = productMapper.selectById(productId);
+            Product p = productMap.get(productId);
             if (p == null) continue;
 
             CartItemVO vo = new CartItemVO();

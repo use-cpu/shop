@@ -1,6 +1,5 @@
 package com.shop.mall.service.impl;
 
-import com.shop.mall.entity.UserBehavior;
 import com.shop.mall.mapper.UserBehaviorMapper;
 import com.shop.mall.service.CategoryService;
 import com.shop.mall.service.ProductService;
@@ -68,15 +67,9 @@ public class RecommendServiceImpl implements RecommendService {
                 .map(m -> Long.valueOf(m.get("category_id").toString()))
                 .collect(Collectors.toList());
 
-        // 用户已浏览商品ID(避免重复推荐)
-        List<UserBehavior> behaviors = userBehaviorMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserBehavior>()
-                        .eq(UserBehavior::getUserId, userId)
-                        .eq(UserBehavior::getBehaviorType, 1));
-        List<Long> viewedIds = behaviors.stream()
-                .map(UserBehavior::getProductId)
-                .distinct()
-                .collect(Collectors.toList());
+        // 用户已浏览商品ID(避免重复推荐): 只取去重ID列, 用 HashSet O(1) 判重
+        java.util.Set<Long> viewedIds = new java.util.HashSet<>(
+                userBehaviorMapper.selectDistinctViewedProductIds(userId));
 
         List<ProductVO> personalized = new ArrayList<>();
         for (Long cid : categoryIds) {

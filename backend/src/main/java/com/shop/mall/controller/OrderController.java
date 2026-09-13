@@ -56,6 +56,12 @@ public class OrderController {
         return Result.success();
     }
 
+    @DeleteMapping("/{orderNo}")
+    public Result<Void> delete(@PathVariable String orderNo) {
+        orderService.delete(orderNo);
+        return Result.success();
+    }
+
     /** 订单详情 */
     @GetMapping("/{orderNo}")
     public Result<OrderVO> detail(@PathVariable String orderNo) {

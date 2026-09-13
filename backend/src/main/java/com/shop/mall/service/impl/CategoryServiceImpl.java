@@ -25,8 +25,26 @@ import java.util.stream.Collectors;
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
+    /** 分类树本地缓存有效期: 60 秒。分类数据量小、变更频率低, 热点接口无需每次全表查询 */
+    private static final long TREE_CACHE_TTL_MS = 60_000L;
+    private volatile List<CategoryVO> cachedTree;
+    private volatile long cachedTreeExpireAt = 0L;
+
     @Override
     public List<CategoryVO> tree() {
+        long now = System.currentTimeMillis();
+        List<CategoryVO> cached = cachedTree;
+        if (cached != null && now < cachedTreeExpireAt) {
+            return cached;
+        }
+        List<CategoryVO> fresh = loadTree();
+        cachedTree = fresh;
+        cachedTreeExpireAt = now + TREE_CACHE_TTL_MS;
+        return fresh;
+    }
+
+    /** 从数据库加载并构建两级分类树 */
+    private List<CategoryVO> loadTree() {
         List<Category> all = list(new LambdaQueryWrapper<Category>()
                 .eq(Category::getStatus, 1)
                 .orderByAsc(Category::getSort));
@@ -46,6 +64,12 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return roots;
     }
 
+    /** 分类发生增删改时主动失效缓存 */
+    private void evictTreeCache() {
+        cachedTree = null;
+        cachedTreeExpireAt = 0L;
+    }
+
     @Override
     public void add(Category category) {
         UserContext.requireAdmin();
@@ -53,12 +77,14 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         if (category.getSort() == null) category.setSort(0);
         if (category.getParentId() == null) category.setParentId(0L);
         save(category);
+        evictTreeCache();
     }
 
     @Override
     public void update(Category category) {
         UserContext.requireAdmin();
         updateById(category);
+        evictTreeCache();
     }
 
     @Override
@@ -71,6 +97,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             throw new BusinessException(ResultCode.FAIL, "该分类下有子分类, 无法删除");
         }
         removeById(id);
+        evictTreeCache();
     }
 
     private CategoryVO toVO(Category c) {

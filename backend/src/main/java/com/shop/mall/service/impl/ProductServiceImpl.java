@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +75,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                     .or().like(Product::getSubtitle, query.getKeyword()));
         }
         if (query.getCategoryId() != null) {
-            w.eq(Product::getCategoryId, query.getCategoryId());
+            // 父级分类需包含其所有子分类下的商品
+            List<Long> categoryIds = new ArrayList<>();
+            categoryIds.add(query.getCategoryId());
+            List<Category> children = categoryMapper.selectList(
+                    new LambdaQueryWrapper<Category>().eq(Category::getParentId, query.getCategoryId()));
+            children.forEach(c -> categoryIds.add(c.getId()));
+            w.in(Product::getCategoryId, categoryIds);
         }
         // 排序
         if ("price_asc".equals(query.getSort())) {
@@ -83,6 +90,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             w.orderByDesc(Product::getPrice);
         } else if ("sales_desc".equals(query.getSort())) {
             w.orderByDesc(Product::getSales);
+        } else if ("new_desc".equals(query.getSort())) {
+            // 新品优先: 按商品 id 倒序(最新上架在前)
+            w.orderByDesc(Product::getId);
         } else {
             w.orderByDesc(Product::getUpdateTime);
         }

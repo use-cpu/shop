@@ -42,7 +42,18 @@
           <el-button type="primary" link @click="$router.push('/register')">注册</el-button>
         </template>
       </div>
+      <button class="menu-toggle" @click="mobileOpen = !mobileOpen" aria-label="菜单">
+        <el-icon :size="20"><Menu /></el-icon>
+      </button>
     </div>
+    <!-- 移动端下拉导航 -->
+    <nav class="mobile-nav" v-show="mobileOpen" @click="mobileOpen = false">
+      <router-link to="/home">首页</router-link>
+      <router-link to="/product/list">全部商品</router-link>
+      <router-link to="/orders" v-if="userStore.isLogin">我的订单</router-link>
+      <router-link to="/profile" v-if="userStore.isLogin">个人中心</router-link>
+      <router-link to="/login" v-if="!userStore.isLogin">登录 / 注册</router-link>
+    </nav>
   </header>
 </template>
 
@@ -57,6 +68,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const localCart = useLocalCartStore()
 const remoteCount = ref(0)
+const mobileOpen = ref(false)
 
 // 已登录显示 Redis 购物车数量; 未登录显示本地购物车数量
 const cartCount = computed(() =>
@@ -92,13 +104,52 @@ defineExpose({ loadCartCount })
 </script>
 
 <style scoped>
-.header { height: 60px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); position: sticky; top: 0; z-index: 100; }
+.header { height: 60px; background: rgba(255,255,255,.92); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,.06); position: sticky; top: 0; z-index: 100; }
 .header-inner { display: flex; align-items: center; height: 100%; }
-.logo { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; color: #409eff; cursor: pointer; }
-.nav { display: flex; gap: 24px; margin-left: 48px; }
-.nav a { color: #606266; font-size: 14px; }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; color: #409eff; cursor: pointer; transition: opacity .15s; user-select: none; }
+.logo:hover { opacity: .8; }
+
+/* 桌面导航: 悬浮下划线动画 */
+.nav { display: flex; gap: 28px; margin-left: 48px; }
+.nav a {
+  position: relative; color: #606266; font-size: 15px; padding: 6px 2px;
+  transition: color .2s;
+}
+.nav a::after {
+  content: ''; position: absolute; left: 0; bottom: -2px; width: 100%; height: 2px;
+  background: #409eff; border-radius: 2px;
+  transform: scaleX(0); transform-origin: center; transition: transform .22s ease;
+}
+.nav a:hover { color: #409eff; }
+.nav a:hover::after, .nav a.router-link-active::after { transform: scaleX(1); }
 .nav a.router-link-active { color: #409eff; font-weight: 600; }
+
 .actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-.cart-btn { display: flex; align-items: center; color: #606266; }
-.user-name { cursor: pointer; color: #409eff; }
+.cart-btn { display: flex; align-items: center; color: #606266; transition: color .2s, transform .15s; }
+.cart-btn:hover { color: #409eff; transform: scale(1.12); }
+.user-name { cursor: pointer; color: #409eff; font-size: 14px; }
+
+/* 汉堡按钮: 仅窄屏显示 */
+.menu-toggle {
+  display: none; margin-left: auto; background: none; border: none; cursor: pointer;
+  color: #606266; padding: 6px; border-radius: 6px;
+}
+.menu-toggle:hover { background: #f0f2f5; color: #409eff; }
+
+/* 移动端下拉导航 */
+.mobile-nav {
+  display: none; flex-direction: column; background: #fff;
+  border-top: 1px solid #ebeef5; padding: 8px 20px 12px;
+}
+.mobile-nav a { padding: 12px 4px; color: #303133; font-size: 15px; border-bottom: 1px solid #f5f7fa; }
+.mobile-nav a.router-link-exact-active { color: #409eff; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .nav { display: none; }
+  .actions { gap: 10px; margin-left: auto; }
+  .logo span { font-size: 17px; }
+  .menu-toggle { display: inline-flex; margin-left: 4px; }
+  .actions .user-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-nav { display: flex; }
+}
 </style>

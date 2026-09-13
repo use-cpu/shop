@@ -11,9 +11,10 @@
         </el-input>
         <el-select v-model="query.sort" placeholder="排序" style="width:140px" @change="search">
           <el-option label="默认" value="default" />
+          <el-option label="新品优先" value="new_desc" />
+          <el-option label="销量优先" value="sales_desc" />
           <el-option label="价格升序" value="price_asc" />
           <el-option label="价格降序" value="price_desc" />
-          <el-option label="销量优先" value="sales_desc" />
         </el-select>
       </div>
 
@@ -28,11 +29,21 @@
       </div>
 
       <!-- 商品网格 -->
-      <div v-loading="loading">
-        <div class="grid" v-if="list.length">
-          <ProductCard v-for="p in list" :key="p.id" :product="p" />
+      <div v-loading="loading && list.length" element-loading-background="rgba(245,247,250,.6)">
+        <!-- 首次加载骨架屏 -->
+        <div class="grid" v-if="loading && !list.length">
+          <div class="skeleton-card" v-for="n in 8" :key="n">
+            <div class="skeleton sk-img"></div>
+            <div class="skeleton sk-line"></div>
+            <div class="skeleton sk-line short"></div>
+          </div>
         </div>
-        <el-empty v-else description="暂无商品" />
+        <template v-else>
+          <div class="grid" v-if="list.length">
+            <ProductCard v-for="p in list" :key="p.id" :product="p" />
+          </div>
+          <el-empty v-else description="暂无商品" />
+        </template>
       </div>
 
       <div class="pager" v-if="total > 0">
@@ -43,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import productApi from '../api/product'
@@ -61,9 +72,18 @@ const categories = ref([])
 const query = reactive({
   keyword: route.query.keyword || '',
   categoryId: route.query.categoryId ? Number(route.query.categoryId) : null,
-  sort: 'default',
+  sort: route.query.sort || 'default',
   pageNum: 1,
   pageSize: 12
+})
+
+// 从首页轮播等入口跳转时, 路由参数变化需同步筛选条件(组件被复用时不会重新挂载)
+watch(() => route.query, (q) => {
+  query.keyword = q.keyword || ''
+  query.categoryId = q.categoryId ? Number(q.categoryId) : null
+  query.sort = q.sort || 'default'
+  query.pageNum = 1
+  loadData()
 })
 
 async function loadData() {
@@ -100,10 +120,22 @@ onMounted(() => {
 
 <style scoped>
 .page { min-height: 100vh; }
-.toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
-.cats { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.cats { background: #fff; padding: 16px; border-radius: 10px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cat-label { color: #909399; font-size: 14px; margin-right: 4px; }
-.cat-tag { cursor: pointer; }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.cat-tag { cursor: pointer; transition: transform .12s; }
+.cat-tag:hover { transform: translateY(-1px); }
 .pager { margin-top: 24px; display: flex; justify-content: center; }
+
+/* 骨架卡片 */
+.skeleton-card { background: #fff; border-radius: 10px; padding: 0 0 14px; overflow: hidden; }
+.sk-img { width: 100%; aspect-ratio: 1; border-radius: 0; }
+.sk-line { height: 14px; margin: 14px 14px 0; }
+.sk-line.short { width: 50%; }
+
+@media (max-width: 768px) {
+  .toolbar :deep(.el-input) { width: 100% !important; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar :deep(.el-select) { width: 100% !important; }
+}
 </style>

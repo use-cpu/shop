@@ -1,20 +1,81 @@
-/* 全局基础样式 */
+/* ========== 全局基础样式 ========== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #app { height: 100%; }
+html { scroll-behavior: smooth; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   color: #303133;
   background: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 a { text-decoration: none; color: inherit; }
 ul, li { list-style: none; }
+img { display: block; }
 
-/* 通用容器 */
-.container { width: 1200px; margin: 0 auto; }
+/* 文本选中色 */
+::selection { background: rgba(64,158,255,.2); }
+
+/* 细滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #c8ccd4; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #a8adb8; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ========== 通用容器(响应式, 窄屏不再横向溢出) ========== */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
 
 /* 主区域留出 header 高度 */
-.main-content { min-height: calc(100vh - 60px); padding: 20px 0; }
+.main-content { min-height: calc(100vh - 60px); padding: 20px 0 48px; }
 
-/* 价格颜色 */
-.price { color: #f56c6c; font-weight: 600; }
-.price-original { color: #909399; text-decoration: line-through; font-size: 12px; margin-left: 6px; }
+/* ========== 通用价格 ========== */
+.price { color: #f56c6c; font-weight: 700; }
+.price-original { color: #909399; text-decoration: line-through; font-size: 12px; margin-left: 6px; font-weight: 400; }
+
+/* ========== 商品网格(全站统一, 自适应列数; 桌面保持4列) ========== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+/* ========== Element Plus 细节统一 ========== */
+.el-card { border-radius: 10px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+.el-button { transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease; }
+.el-button:active { transform: scale(.97); }
+.el-tag { border-radius: 6px; }
+.el-input__wrapper, .el-select__wrapper { border-radius: 8px !important; }
+
+/* 卡片悬浮通用反馈 */
+.hover-lift { transition: transform .2s ease, box-shadow .2s ease; }
+.hover-lift:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.1); }
+
+/* 骨架屏微光动画 */
+.skeleton {
+  background: linear-gradient(90deg, #f0f2f5 25%, #e6e8ec 37%, #f0f2f5 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* 路由切换淡入 */
+.fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ========== 响应式断点 ========== */
+@media (max-width: 768px) {
+  .container { padding-left: 12px; padding-right: 12px; }
+  .main-content { padding-top: 12px; }
+  .grid { gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}

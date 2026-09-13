@@ -44,7 +44,9 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true   # 下划线转驼峰
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # SQL 日志走 SLF4J, 受日志级别控制(默认 info 不打印 SQL, 避免每条 SQL 同步刷控制台的 IO 开销)
+    # 本地排障时把 logging.level.com.shop.mall.mapper 调为 debug 即可查看 SQL
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: AUTO                      # 主键自增
@@ -67,4 +69,6 @@ shop:
 
 logging:
   level:
-    com.shop.mall: debug
+    com.shop.mall: info
+    # 排障时设为 debug 可打印 SQL 与参数
+    com.shop.mall.mapper: info

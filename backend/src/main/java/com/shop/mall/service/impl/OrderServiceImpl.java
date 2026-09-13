@@ -34,7 +34,9 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -113,9 +115,19 @@ public class OrderServiceImpl implements OrderService {
         order.setReceiverAddress(joinAddress(addr));
         BigDecimal totalAmount = BigDecimal.ZERO;
         int totalQty = 0;
+
+        // 批量查询商品快照, 避免循环内逐条 selectById 造成 N+1
+        List<Long> productIds = selected.stream()
+                .map(CartItemVO::getProductId).distinct().collect(Collectors.toList());
+        Map<Long, Product> productMap = productMapper.selectBatchIds(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
         List<OrderItem> items = new ArrayList<>();
         for (CartItemVO item : selected) {
-            Product p = productMapper.selectById(item.getProductId());
+            Product p = productMap.get(item.getProductId());
+            if (p == null) {
+                throw new BusinessException(ResultCode.PRODUCT_NOT_FOUND);
+            }
             BigDecimal subtotal = p.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
             totalAmount = totalAmount.add(subtotal);
             totalQty += item.getQuantity();
@@ -242,6 +254,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(String orderNo) {
+        OrderInfo order = loadOrder(orderNo);
+        if (order.getStatus() != 3 && order.getStatus() != 4) {
+            throw new BusinessException(ResultCode.ORDER_STATUS_INVALID, "仅已完成或已关闭的订单可删除");
+        }
+        // 先删订单项, 再删订单主表
+        orderItemMapper.delete(new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId()));
+        orderInfoMapper.deleteById(order.getId());
+        log.info("订单记录已删除: orderNo={}, userId={}", orderNo, order.getUserId());
+    }
+
+    @Override
     public OrderVO detail(String orderNo) {
         OrderInfo order = loadOrder(orderNo);
         return toVO(order);
@@ -286,19 +311,29 @@ public class OrderServiceImpl implements OrderService {
                         .lt(OrderInfo::getCreateTime, deadline));
         if (timeouts.isEmpty()) return;
         log.info("扫描到 {} 笔超时未支付订单, 执行关单", timeouts.size());
+        // 一次性批量查询所有超时订单明细, 避免循环内逐单查询
+        List<Long> timeoutIds = timeouts.stream().map(OrderInfo::getId).collect(Collectors.toList());
+        Map<Long, List<OrderItem>> itemMap = orderItemMapper.selectList(
+                        new LambdaQueryWrapper<OrderItem>().in(OrderItem::getOrderId, timeoutIds)).stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
         for (OrderInfo order : timeouts) {
-            closeOrderAndRollbackStock(order);
+            closeAndRollback(order, itemMap.getOrDefault(order.getId(), Collections.emptyList()));
         }
     }
 
-    /** 关单并回补库存 */
+    /** 关单并回补库存(单条取消路径, 明细即时查询) */
     private void closeOrderAndRollbackStock(OrderInfo order) {
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderNo, order.getOrderNo()));
+        closeAndRollback(order, items);
+    }
+
+    /** 执行关单状态更新并按明细回补库存 */
+    private void closeAndRollback(OrderInfo order, List<OrderItem> items) {
         order.setStatus(4);
         order.setCloseTime(LocalDateTime.now());
         orderInfoMapper.updateById(order);
         // 回补库存
-        List<OrderItem> items = orderItemMapper.selectList(
-                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderNo, order.getOrderNo()));
         for (OrderItem item : items) {
             stockService.rollback(item.getProductId(), item.getQuantity());
         }
@@ -311,7 +346,17 @@ public class OrderServiceImpl implements OrderService {
         if (status != null) w.eq(OrderInfo::getStatus, status);
         w.orderByDesc(OrderInfo::getCreateTime);
         IPage<OrderInfo> p = orderInfoMapper.selectPage(page, w);
-        return p.convert(this::toVO);
+        List<OrderInfo> orders = p.getRecords();
+        if (orders.isEmpty()) {
+            return p.convert(o -> toVO(o, Collections.emptyList()));
+        }
+        // 一次性批量查询本页所有订单明细并按 orderId 分组, 消除分页 N+1
+        List<Long> orderIds = orders.stream().map(OrderInfo::getId).collect(Collectors.toList());
+        List<OrderItem> allItems = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().in(OrderItem::getOrderId, orderIds));
+        Map<Long, List<OrderItem>> itemMap = allItems.stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+        return p.convert(o -> toVO(o, itemMap.getOrDefault(o.getId(), Collections.emptyList())));
     }
 
     private OrderInfo loadOrder(String orderNo) {
@@ -345,7 +390,15 @@ public class OrderServiceImpl implements OrderService {
         return sb.toString();
     }
 
+    /** 单订单详情: 查询一次明细后组装 */
     private OrderVO toVO(OrderInfo order) {
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderNo, order.getOrderNo()));
+        return toVO(order, items);
+    }
+
+    /** 订单组装(明细由调用方批量预加载, 避免 N+1) */
+    private OrderVO toVO(OrderInfo order, List<OrderItem> items) {
         OrderVO vo = new OrderVO();
         vo.setId(order.getId());
         vo.setOrderNo(order.getOrderNo());
@@ -362,8 +415,6 @@ public class OrderServiceImpl implements OrderService {
         vo.setFinishTime(order.getFinishTime());
         vo.setCloseTime(order.getCloseTime());
         vo.setCreateTime(order.getCreateTime());
-        List<OrderItem> items = orderItemMapper.selectList(
-                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderNo, order.getOrderNo()));
         vo.setOrderItems(items);
         return vo;
     }

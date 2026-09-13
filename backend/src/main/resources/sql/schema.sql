@@ -71,7 +71,7 @@ CREATE TABLE `product` (
     `category_id`    BIGINT        NOT NULL COMMENT '分类ID',
     `name`           VARCHAR(100)  NOT NULL COMMENT '商品名',
     `subtitle`       VARCHAR(200)           DEFAULT NULL COMMENT '副标题',
-    `main_image`     VARCHAR(255)           DEFAULT NULL COMMENT '主图URL',
+    `main_image`     VARCHAR(1000)          DEFAULT NULL COMMENT '主图URL',
     `images`         VARCHAR(1000)          DEFAULT NULL COMMENT '多图URL, 逗号分隔',
     `detail`         TEXT                   DEFAULT NULL COMMENT '商品详情(富文本)',
     `price`          DECIMAL(10,2) NOT NULL COMMENT '售价',
@@ -121,7 +121,7 @@ CREATE TABLE `order_item` (
     `order_no`      VARCHAR(32)   NOT NULL COMMENT '订单号(冗余便于查询)',
     `product_id`    BIGINT        NOT NULL COMMENT '商品ID',
     `product_name`  VARCHAR(100)  NOT NULL COMMENT '商品名(下单快照)',
-    `product_image` VARCHAR(255)           DEFAULT NULL COMMENT '商品主图(快照)',
+    `product_image` VARCHAR(1000)          DEFAULT NULL COMMENT '商品主图(快照)',
     `price`         DECIMAL(10,2) NOT NULL COMMENT '成交单价',
     `quantity`      INT           NOT NULL COMMENT '购买数量',
     PRIMARY KEY (`id`),
@@ -168,13 +168,23 @@ INSERT INTO `category` (`name`, `parent_id`, `sort`) VALUES
 ('电脑', 1, 2),
 ('配件', 1, 3);
 
--- 示例商品 (图片使用占位, 实际可替换)
+-- 示例商品 (主图为 AI 生成的对应商品图)
 INSERT INTO `product` (`category_id`, `name`, `subtitle`, `main_image`, `price`, `original_price`, `stock`, `sales`, `status`) VALUES
-(5, '智能手机 X1', '6.5英寸全面屏 旗舰芯片', 'https://picsum.photos/seed/p1/600/600', 2999.00, 3499.00, 100, 256, 1),
-(5, '智能手机 P30', '拍照神器 超长续航', 'https://picsum.photos/seed/p2/600/600', 1999.00, 2299.00, 80, 188, 1),
-(6, '轻薄笔记本 Air', '13英寸 16GB+512GB', 'https://picsum.photos/seed/p3/600/600', 4999.00, 5499.00, 50, 120, 1),
-(6, '游戏本 T90', 'RTX高性能显卡', 'https://picsum.photos/seed/p4/600/600', 7999.00, 8999.00, 30, 66, 1),
-(7, '蓝牙耳机 Pro', '主动降噪 续航30小时', 'https://picsum.photos/seed/p5/600/600', 399.00, 499.00, 200, 520, 1),
-(2, '纯棉T恤', '舒适透气 多色可选', 'https://picsum.photos/seed/p6/600/600', 79.00, 129.00, 300, 880, 1),
-(3, '牛奶饼干礼盒', '营养早餐 整箱装', 'https://picsum.photos/seed/p7/600/600', 49.00, 69.00, 500, 1200, 1),
-(4, '北欧极简台灯', '护眼LED 三档调光', 'https://picsum.photos/seed/p8/600/600', 129.00, 199.00, 150, 340, 1);
+(5, '智能手机 X1', '6.5英寸全面屏 旗舰芯片', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Premium%20flagship%20smartphone%20with%20large%20full%20screen%20display%2C%20sleek%20modern%20design%2C%20e-commerce%20product%20photography%20on%20clean%20white%20background%2C%20centered%2C%20high%20detail&image_size=square_hd', 2999.00, 3499.00, 100, 256, 1),
+(5, '智能手机 P30', '拍照神器 超长续航', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Modern%20smartphone%20with%20triple%20camera%20system%20on%20back%2C%20camera%20phone%20product%20photo%2C%20e-commerce%20photography%20on%20clean%20white%20background%2C%20centered%2C%20high%20detail&image_size=square_hd', 1999.00, 2299.00, 80, 188, 1),
+(6, '轻薄笔记本 Air', '13英寸 16GB+512GB', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Ultra%20slim%20lightweight%20silver%20laptop%2013%20inch%2C%20thin%20bezels%2C%20open%20notebook%2C%20e-commerce%20product%20photography%20on%20clean%20white%20background%2C%20centered&image_size=square_hd', 4999.00, 5499.00, 50, 120, 1),
+(6, '游戏本 T90', 'RTX高性能显卡', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=High%20performance%20gaming%20laptop%20with%20RGB%20backlit%20keyboard%2C%20dark%20aggressive%20design%2C%20open%20notebook%2C%20e-commerce%20product%20photo%20on%20dark%20clean%20background%2C%20centered&image_size=square_hd', 7999.00, 8999.00, 30, 66, 1),
+(7, '蓝牙耳机 Pro', '主动降噪 续航30小时', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Wireless%20bluetooth%20earbuds%20with%20open%20charging%20case%2C%20white%20earphones%2C%20e-commerce%20product%20photography%20on%20clean%20white%20background%2C%20centered%2C%20high%20detail&image_size=square_hd', 399.00, 499.00, 200, 520, 1),
+(2, '纯棉T恤', '舒适透气 多色可选', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Folded%20premium%20cotton%20t-shirt%2C%20casual%20apparel%20clothing%2C%20neatly%20stacked%2C%20e-commerce%20product%20photo%20on%20clean%20white%20background%2C%20centered%2C%20high%20detail&image_size=square_hd', 79.00, 129.00, 300, 880, 1),
+(3, '牛奶饼干礼盒', '营养早餐 整箱装', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Milk%20cookies%20gift%20box%20packaging%20with%20biscuits%20and%20milk%2C%20food%20gift%20set%2C%20e-commerce%20product%20photography%20on%20clean%20white%20background%2C%20centered&image_size=square_hd', 49.00, 69.00, 500, 1200, 1),
+(4, '北欧极简台灯', '护眼LED 三档调光', 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Minimalist%20nordic%20style%20LED%20desk%20lamp%2C%20simple%20scandinavian%20design%2C%20warm%20light%2C%20eye-care%20table%20light%2C%20e-commerce%20product%20photo%20on%20clean%20white%20background%2C%20centered&image_size=square_hd', 129.00, 199.00, 150, 340, 1);
+
+-- 商品详情描述
+UPDATE product SET detail = '<h3>智能手机 X1</h3><p>6.5 英寸全面屏旗舰手机, 搭载高性能芯片与 AI 影像系统, 无论是游戏、影像还是日常办公都能流畅应对。</p><h4>核心亮点</h4><ul><li>6.5 英寸 AMOLED 全面屏, 120Hz 高刷新率</li><li>旗舰级处理器, 性能强劲功耗更低</li><li>5000mAh 大电池 + 67W 快充</li><li>4800 万像素 AI 三摄影像系统</li></ul><h4>服务保障</h4><p>全国联保一年 · 7 天无理由退货 · 顺丰包邮</p>' WHERE name = '智能手机 X1';
+UPDATE product SET detail = '<h3>智能手机 P30</h3><p>专为影像爱好者打造, 超感光三摄系统配合夜景算法, 白天黑夜都能拍出大片质感, 续航更是一天一充无压力。</p><h4>核心亮点</h4><ul><li>5000 万像素超感光主摄 + 双副摄</li><li>专业夜景模式, 暗光清晰成像</li><li>4500mAh 电池, 超长续航</li><li>轻薄机身, 单手握持舒适</li></ul><h4>服务保障</h4><p>全国联保一年 · 7 天无理由退货 · 顺丰包邮</p>' WHERE name = '智能手机 P30';
+UPDATE product SET detail = '<h3>轻薄笔记本 Air</h3><p>13 英寸轻薄机身仅重 1.2kg, 16GB+512GB 黄金配置, 全金属一体成型工艺, 移动办公与学习的理想之选。</p><h4>核心亮点</h4><ul><li>13 英寸 2K 高色域屏幕</li><li>16GB 大内存 + 512GB 固态硬盘</li><li>全金属机身仅 1.2kg, 厚度 14.9mm</li><li>长续航 18 小时, 支持快充</li></ul><h4>服务保障</h4><p>全国联保两年 · 7 天无理由退货 · 顺丰包邮</p>' WHERE name = '轻薄笔记本 Air';
+UPDATE product SET detail = '<h3>游戏本 T90</h3><p>搭载 RTX 高性能独立显卡与高刷新率电竞屏, 竞级散热系统压制核心温度, 大型 3A 游戏高画质流畅运行。</p><h4>核心亮点</h4><ul><li>RTX 高性能显卡, 光线追踪加持</li><li>15.6 英寸 165Hz 电竞高刷屏</li><li>四出风口双风扇竞级散热</li><li>RGB 背光键盘, 丰富灯效</li></ul><h4>服务保障</h4><p>全国联保两年 · 7 天无理由退货 · 顺丰包邮</p>' WHERE name = '游戏本 T90';
+UPDATE product SET detail = '<h3>蓝牙耳机 Pro</h3><p>主动降噪蓝牙耳机, 最高 30 小时超长续航, 人声通透模式与低延迟游戏模式, 通勤运动全场景适用。</p><h4>核心亮点</h4><ul><li>主动降噪, 智能通透模式</li><li>单次 8 小时 + 充电盒共 30 小时续航</li><li>蓝牙 5.3 低延迟连接</li><li>IPX5 防水, 运动无忧</li></ul><h4>服务保障</h4><p>全国联保一年 · 7 天无理由退货 · 顺丰包邮</p>' WHERE name = '蓝牙耳机 Pro';
+UPDATE product SET detail = '<h3>纯棉 T 恤</h3><p>精选 100% 新疆长绒棉, 亲肤透气不起球, 多色多码可选, 是春夏百搭的必备基础款。</p><h4>核心亮点</h4><ul><li>100% 纯棉面料, 亲肤透气</li><li>精纱工艺, 不易起球变形</li><li>多色可选: 白/灰/黑等</li><li>基础百搭, 男女同款</li></ul><h4>服务保障</h4><p>7 天无理由退换 · 赠品运费险 · 极速发货</p>' WHERE name = '纯棉T恤';
+UPDATE product SET detail = '<h3>牛奶饼干礼盒</h3><p>精选小麦与新西兰乳粉, 香酥可口奶香浓郁, 精美礼盒装, 早餐下午茶、送礼自用两相宜。</p><h4>核心亮点</h4><ul><li>新西兰进口乳粉, 奶香浓郁</li><li>独立小包装, 新鲜便携</li><li>整箱 1kg 装超实惠</li><li>精美礼盒, 送礼有面子</li></ul><h4>服务保障</h4><p>保质期 12 个月 · 破损包赔 · 极速发货</p>' WHERE name = '牛奶饼干礼盒';
+UPDATE product SET detail = '<h3>北欧极简台灯</h3><p>北欧简约设计, 护眼 LED 光源三档调光, 无频闪无蓝光危害, 学习办公阅读的理想照明伙伴。</p><h4>核心亮点</h4><ul><li>护眼 LED, 无频闪低蓝光</li><li>三档调光, 触摸开关</li><li>360° 柔光罩, 光线均匀不刺眼</li><li>北欧极简造型, 百搭家居风格</li></ul><h4>服务保障</h4><p>全国联保一年 · 7 天无理由退货 · 极速发货</p>' WHERE name = '北欧极简台灯';

@@ -28,4 +28,13 @@ public interface UserBehaviorMapper extends BaseMapper<UserBehavior> {
             "ORDER BY total_weight DESC " +
             "LIMIT #{limit}")
     List<Map<String, Object>> selectCategoryWeights(Long userId, int limit);
+
+    /**
+     * 查询用户已浏览过的商品ID(去重), 用于推荐去重。
+     * 只取 product_id 单列, 避免把全部行为记录的全字段拉到内存。
+     */
+    @Select("SELECT DISTINCT product_id " +
+            "FROM user_behavior " +
+            "WHERE user_id = #{userId} AND behavior_type = 1")
+    List<Long> selectDistinctViewedProductIds(Long userId);
 }

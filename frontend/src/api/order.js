@@ -7,6 +7,7 @@ export default {
   pay: (orderNo) => request.post(`/order/pay/${orderNo}`),
   cancel: (orderNo) => request.post(`/order/cancel/${orderNo}`),
   confirm: (orderNo) => request.post(`/order/confirm/${orderNo}`),
+  delete: (orderNo) => request.delete(`/order/${orderNo}`),
   detail: (orderNo) => request.get(`/order/${orderNo}`),
   myOrders: (params) => request.get('/order/list', { params }),
   // 管理后台
