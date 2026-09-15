@@ -6,6 +6,7 @@ import com.shop.mall.common.BusinessException;
 import com.shop.mall.common.ResultCode;
 import com.shop.mall.dto.LoginDTO;
 import com.shop.mall.dto.RegisterDTO;
+import com.shop.mall.dto.UpdateProfileDTO;
 import com.shop.mall.entity.User;
 import com.shop.mall.mapper.UserMapper;
 import com.shop.mall.service.UserService;
@@ -86,6 +87,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 脱敏: 不返回密码
         user.setPassword(null);
         return user;
+    }
+
+    @Override
+    public void updateProfile(UpdateProfileDTO dto) {
+        Long userId = UserContext.getUserId();
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+        // 只更新允许用户自行修改的字段, 不碰 username/password/role/status
+        if (dto.getNickname() != null) user.setNickname(dto.getNickname());
+        if (dto.getPhone() != null) user.setPhone(dto.getPhone());
+        if (dto.getEmail() != null) user.setEmail(dto.getEmail());
+        updateById(user);
+        log.info("用户资料更新成功: userId={}, phone={}, email={}", userId, dto.getPhone(), dto.getEmail());
     }
 
     @Override

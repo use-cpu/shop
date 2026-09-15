@@ -7,6 +7,7 @@ import com.shop.mall.dto.ProductQueryDTO;
 import com.shop.mall.dto.StockUpdateDTO;
 import com.shop.mall.service.ProductService;
 import com.shop.mall.service.UserBehaviorService;
+import com.shop.mall.utils.UserContext;
 import com.shop.mall.vo.ProductVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,36 +52,42 @@ public class ProductController {
     /* ==================== 管理后台 ==================== */
     @PostMapping
     public Result<Void> add(@Valid @RequestBody ProductDTO dto) {
+        UserContext.requireAdmin();
         productService.add(dto);
         return Result.success();
     }
 
     @PutMapping
     public Result<Void> update(@Valid @RequestBody ProductDTO dto) {
+        UserContext.requireAdmin();
         productService.update(dto);
         return Result.success();
     }
 
     @PutMapping("/status/{id}/{status}")
     public Result<Void> toggleStatus(@PathVariable Long id, @PathVariable Integer status) {
+        UserContext.requireAdmin();
         productService.toggleStatus(id, status);
         return Result.success();
     }
 
     @PutMapping("/stock")
     public Result<Void> updateStock(@Valid @RequestBody StockUpdateDTO dto) {
+        UserContext.requireAdmin();
         productService.updateStock(dto);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     public Result<Void> remove(@PathVariable Long id) {
+        UserContext.requireAdmin();
         productService.remove(id);
         return Result.success();
     }
 
     @GetMapping("/admin/list")
     public Result<IPage<ProductVO>> adminList(ProductQueryDTO query) {
+        UserContext.requireAdmin();
         return Result.success(productService.pageAdmin(query));
     }
 }

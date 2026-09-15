@@ -7,11 +7,21 @@
       </div>
 
       <nav class="nav">
-        <router-link to="/home">首页</router-link>
         <router-link to="/product/list">全部商品</router-link>
         <router-link to="/orders" v-if="userStore.isLogin">我的订单</router-link>
         <router-link to="/profile" v-if="userStore.isLogin">个人中心</router-link>
       </nav>
+
+      <div class="search-box">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索商品"
+          :prefix-icon="Search"
+          clearable
+          @keyup.enter="onSearch"
+        />
+        <el-button type="primary" @click="onSearch">搜索</el-button>
+      </div>
 
       <div class="actions">
         <router-link to="/cart" class="cart-btn" v-if="userStore.isLogin">
@@ -48,7 +58,6 @@
     </div>
     <!-- 移动端下拉导航 -->
     <nav class="mobile-nav" v-show="mobileOpen" @click="mobileOpen = false">
-      <router-link to="/home">首页</router-link>
       <router-link to="/product/list">全部商品</router-link>
       <router-link to="/orders" v-if="userStore.isLogin">我的订单</router-link>
       <router-link to="/profile" v-if="userStore.isLogin">个人中心</router-link>
@@ -60,6 +69,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ShoppingCart, ShoppingBag, Menu, Search } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { useLocalCartStore } from '../stores/cart'
 import cartApi from '../api/cart'
@@ -69,6 +79,11 @@ const userStore = useUserStore()
 const localCart = useLocalCartStore()
 const remoteCount = ref(0)
 const mobileOpen = ref(false)
+const keyword = ref('')
+
+function onSearch() {
+  router.push({ path: '/product/list', query: keyword.value.trim() ? { keyword: keyword.value.trim() } : {} })
+}
 
 // 已登录显示 Redis 购物车数量; 未登录显示本地购物车数量
 const cartCount = computed(() =>
@@ -86,6 +101,8 @@ async function loadCartCount() {
 function handleCommand(cmd) {
   if (cmd === 'logout') {
     userStore.logout()
+    localCart.clear()
+    remoteCount.value = 0
     router.push('/home')
   } else if (cmd === 'profile') {
     router.push('/profile')
@@ -124,6 +141,12 @@ defineExpose({ loadCartCount })
 .nav a:hover::after, .nav a.router-link-active::after { transform: scaleX(1); }
 .nav a.router-link-active { color: #409eff; font-weight: 600; }
 
+.search-box {
+  flex: 1; max-width: 420px; margin-left: 36px;
+  display: flex; gap: 8px;
+}
+.search-box .el-input { flex: 1; }
+
 .actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
 .cart-btn { display: flex; align-items: center; color: #606266; transition: color .2s, transform .15s; }
 .cart-btn:hover { color: #409eff; transform: scale(1.12); }
@@ -146,6 +169,7 @@ defineExpose({ loadCartCount })
 
 @media (max-width: 768px) {
   .nav { display: none; }
+  .search-box { display: none; }
   .actions { gap: 10px; margin-left: auto; }
   .logo span { font-size: 17px; }
   .menu-toggle { display: inline-flex; margin-left: 4px; }

@@ -3,6 +3,7 @@ package com.shop.mall.controller;
 import com.shop.mall.common.Result;
 import com.shop.mall.dto.LoginDTO;
 import com.shop.mall.dto.RegisterDTO;
+import com.shop.mall.dto.UpdateProfileDTO;
 import com.shop.mall.entity.User;
 import com.shop.mall.service.UserService;
 import com.shop.mall.vo.LoginVO;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 鉴权 Controller
- * 注册 / 登录 / 当前用户信息 / 管理员登录
+ * 注册 / 登录 / 当前用户信息 / 管理员登录 / 更新个人资料
  *
  * @author shop-mall
  */
@@ -42,5 +43,11 @@ public class AuthController {
     @GetMapping("/info")
     public Result<User> info() {
         return Result.success(userService.getCurrentUser());
+    }
+
+    @PutMapping("/profile")
+    public Result<Void> updateProfile(@RequestBody UpdateProfileDTO dto) {
+        userService.updateProfile(dto);
+        return Result.success();
     }
 }

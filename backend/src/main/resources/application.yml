@@ -35,6 +35,12 @@ spring:
           max-active: 16
           max-idle: 8
           min-idle: 2
+  # ---------- 文件上传配置 ----------
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB           # 单个文件最大 10MB
+      max-request-size: 50MB        # 单次请求最大 50MB
   # ---------- Jackson 序列化 ----------
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -66,6 +72,9 @@ shop:
     prefix: "stock:"                     # Redis 库存缓存 key 前缀
   order:
     pay-timeout: 30                      # 未支付自动关单时间(分钟)
+  upload:
+    path: ./uploads/                     # 上传文件存储目录(相对项目运行目录)
+    url-prefix: /upload/                 # 访问上传文件的 URL 前缀
 
 logging:
   level:

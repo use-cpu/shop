@@ -45,6 +45,7 @@ public class AdminUserController {
 
     @PutMapping("/status")
     public Result<Void> updateStatus(@Valid @RequestBody UserStatusDTO dto) {
+        UserContext.requireAdmin();
         userService.updateStatus(dto.getUserId(), dto.getStatus());
         return Result.success();
     }

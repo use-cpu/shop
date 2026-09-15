@@ -24,6 +24,12 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      // 上传的图片资源也代理到后端(后端 context-path 是 /api, 需 rewrite 补前缀)
+      '/upload': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => '/api' + path
       }
     }
   },

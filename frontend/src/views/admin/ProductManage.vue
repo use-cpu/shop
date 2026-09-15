@@ -55,11 +55,40 @@
         <el-form-item label="副标题">
           <el-input v-model="form.subtitle" />
         </el-form-item>
-        <el-form-item label="主图URL">
-          <el-input v-model="form.mainImage" placeholder="https://..." />
+        <el-form-item label="主图">
+          <div class="upload-area">
+            <el-upload
+              class="main-image-uploader"
+              action="/api/file/upload"
+              :headers="uploadHeaders"
+              :show-file-list="false"
+              :on-success="onMainImageSuccess"
+              :before-upload="beforeUpload"
+              accept="image/*"
+            >
+              <img v-if="form.mainImage" :src="form.mainImage" class="main-image-preview" />
+              <el-icon v-else class="upload-icon"><Plus /></el-icon>
+            </el-upload>
+            <el-input v-model="form.mainImage" placeholder="或手动输入URL" style="flex:1; margin-left:12px" />
+          </div>
         </el-form-item>
-        <el-form-item label="多图URL">
-          <el-input v-model="form.images" type="textarea" :rows="2" placeholder="多个URL用逗号分隔" />
+        <el-form-item label="多图">
+          <div class="upload-area">
+            <el-upload
+              action="/api/file/upload"
+              :headers="uploadHeaders"
+              list-type="picture-card"
+              :file-list="imageList"
+              :on-success="onImagesSuccess"
+              :on-remove="onImagesRemove"
+              :before-upload="beforeUpload"
+              accept="image/*"
+              multiple
+            >
+              <el-icon><Plus /></el-icon>
+            </el-upload>
+            <el-input v-model="form.images" type="textarea" :rows="2" placeholder="或手动输入, 多个URL用逗号分隔" style="flex:1; margin-left:12px" />
+          </div>
         </el-form-item>
         <el-form-item label="售价" prop="price">
           <el-input-number v-model="form.price" :min="0" :precision="2" />
@@ -100,11 +129,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import productApi from '../../api/product'
 import categoryApi from '../../api/category'
+import { useUserStore } from '../../stores/user'
+
+const userStore = useUserStore()
+const uploadHeaders = computed(() => ({
+  Authorization: userStore.token ? 'Bearer ' + userStore.token : ''
+}))
+const imageList = ref([])
 
 const loading = ref(false)
 const list = ref([])
@@ -147,9 +183,59 @@ function search() {
 }
 
 function openDialog(row) {
-  if (row) Object.assign(form, row, { images: row.images?.join(',') || '' })
-  else Object.assign(form, { id: null, categoryId: null, name: '', subtitle: '', mainImage: '', images: '', detail: '', price: 0, originalPrice: null, stock: 0, status: 1 })
+  if (row) {
+    Object.assign(form, row, { images: row.images?.join(',') || '' })
+    // 从 images 字符串恢复多图列表
+    const urls = form.images ? form.images.split(',').filter(Boolean) : []
+    imageList.value = urls.map((url, i) => ({ name: i + '', url }))
+  } else {
+    Object.assign(form, { id: null, categoryId: null, name: '', subtitle: '', mainImage: '', images: '', detail: '', price: 0, originalPrice: null, stock: 0, status: 1 })
+    imageList.value = []
+  }
   dialogVisible.value = true
+}
+
+// ---------- 图片上传 ----------
+function beforeUpload(file) {
+  const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件(jpg/png/gif/webp)')
+    return false
+  }
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('图片大小不能超过 10MB')
+    return false
+  }
+  return true
+}
+
+function onMainImageSuccess(res) {
+  if (res.code === 0) {
+    form.mainImage = res.data
+    ElMessage.success('主图上传成功')
+  } else {
+    ElMessage.error(res.message || '上传失败')
+  }
+}
+
+function onImagesSuccess(res) {
+  if (res.code === 0) {
+    // 追加到 images 字段(逗号分隔)
+    if (form.images) form.images += ',' + res.data
+    else form.images = res.data
+    ElMessage.success('图片上传成功')
+  } else {
+    ElMessage.error(res.message || '上传失败')
+  }
+}
+
+function onImagesRemove(file) {
+  // 从 images 字段中移除被删的 URL
+  const removedUrl = file.url || file.response?.data
+  if (!removedUrl) return
+  const urls = form.images ? form.images.split(',').filter(url => url !== removedUrl) : []
+  form.images = urls.join(',')
 }
 
 async function save() {
@@ -202,4 +288,12 @@ onMounted(() => {
 .toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .thumb { width: 40px; height: 40px; border-radius: 4px; }
 .pager { margin-top: 16px; display: flex; justify-content: center; }
+.upload-area { display: flex; align-items: flex-start; }
+.main-image-uploader :deep(.el-upload) {
+  width: 120px; height: 120px; border: 1px dashed #d9d9d9; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.main-image-uploader :deep(.el-upload:hover) { border-color: #409eff; }
+.main-image-preview { width: 120px; height: 120px; object-fit: cover; }
+.upload-icon { font-size: 28px; color: #8c939d; }
 </style>
